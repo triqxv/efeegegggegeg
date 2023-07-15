@@ -18,8 +18,6 @@ function topos(Pos)
     end
 end
 
-
-
     
 function matiMampusLu(delay)
 require(game:GetService("ReplicatedStorage").Notification).new("Hello"):Display();
@@ -81,7 +79,7 @@ function thisCode()
                         wait()
                         game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, game.Players.LocalPlayer)
                     end)
-                    wait(4)
+                    wait(2)
                 end
             end
         end
