@@ -1,34 +1,7 @@
-
-function thisCode()
-    repeat task.wait() until game:IsLoaded()
-
-    local AllIDs = {}
-    local actualHour = os.date("!*t").hour
-    local File = pcall(function()
-        AllIDs = game:GetService('HttpService'):JSONDecode(readfile("NotSameServers.json"))
-    end)
-
-    if not File then
-        table.insert(AllIDs, actualHour)
-        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
-    end
-
-    function Teleport()
-        while wait() do
-            local success = findServerWithItem("God's Chalice") or findServerWithItem("Fist of Darkness")
-
-            if success then
-                break
-            end
-        end
-    end
-
-    function topos(Pos)
-        local Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-        if game.Players.LocalPlayer.Character.Humanoid.Sit == true then
-            game.Players.LocalPlayer.Character.Humanoid.Sit = false
-        end
-        local tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart, TweenInfo.new(Distance / 210, Enum.EasingStyle.Linear), { CFrame = Pos })
+function topos(Pos)
+        Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+        if game.Players.LocalPlayer.Character.Humanoid.Sit == true then game.Players.LocalPlayer.Character.Humanoid.Sit = false end
+        pcall(function() tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart,TweenInfo.new(Distance/210, Enum.EasingStyle.Linear),{CFrame = Pos}) end)
         tween:Play()
         if Distance <= 250 then
             tween:Cancel()
@@ -39,92 +12,102 @@ function thisCode()
             _G.Clip = false
         end
     end
+    
+function matiMampusLu(delay)
+require(game:GetService("ReplicatedStorage").Notification).new("Hello"):Display();
+wait(delay)
+game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end
 
-    function matiMampusLu(delay)
-        require(game:GetService("ReplicatedStorage").Notification).new("Hello"):Display()
-        wait(delay)
-        game.Players.LocalPlayer.Character.Humanoid.Health = 0
+function thisCode()
+    repeat task.wait() until game:IsLoaded()
+    local PlaceID = game.PlaceId
+    local AllIDs = {}
+    local foundAnything = ""
+    local actualHour = os.date("!*t").hour
+    local Deleted = false
+    local File = pcall(function()
+        AllIDs = game:GetService('HttpService'):JSONDecode(readfile("NotSameServers.json"))
+    end)
+    if not File then
+        table.insert(AllIDs, actualHour)
+        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
     end
-
-    function findServerWithItem(itemName)
-        local function getServerData()
-            local PlaceID = game.PlaceId
-            local servers = {}
-            local cursor = ""
-
-            while true do
-                local response = game.HttpService:JSONDecode(game:HttpGetAsync(
-                    string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100&cursor=%s", PlaceID, cursor)
-                ))
-
-                if response and response.data then
-                    for _, server in ipairs(response.data) do
-                        if tonumber(server.maxPlayers) > tonumber(server.playing) then
-                            table.insert(servers, server)
+    function TPReturner()
+        local Site;
+        if foundAnything == "" then
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+        else
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+        end
+        local ID = ""
+        if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+            foundAnything = Site.nextPageCursor
+        end
+        local num = 0;
+        for i,v in pairs(Site.data) do
+            local Possible = true
+            ID = tostring(v.id)
+            if tonumber(v.maxPlayers) > tonumber(v.playing) then
+                for _,Existing in pairs(AllIDs) do
+                    if num ~= 0 then
+                        if ID == tostring(Existing) then
+                            Possible = false
+                        end
+                    else
+                        if tonumber(actualHour) ~= tonumber(Existing) then
+                            local delFile = pcall(function()
+                                delfile("NotSameServers.json")
+                                AllIDs = {}
+                                table.insert(AllIDs, actualHour)
+                            end)
                         end
                     end
+                    num = num + 1
                 end
-
-                if response and response.nextPageCursor and response.nextPageCursor ~= "null" then
-                    cursor = response.nextPageCursor
-                else
-                    break
-                end
-            end
-
-            return servers
-        end
-
-        local servers = getServerData()
-
-        if #servers > 0 then
-            table.sort(servers, function(a, b)
-                return a.playing < b.playing
-            end)
-
-            for _, server in ipairs(servers) do
-                local success, message = pcall(function()
-                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
-                end)
-
-                if success then
-                    wait(1)
-                    local foundItem = game.Players.LocalPlayer.Backpack:FindFirstChild(itemName) or game.Players.LocalPlayer.Character:FindFirstChild(itemName)
-
-                    if foundItem then
-                        return true
-                    end
-                else
-                    warn("Failed to teleport to server:", message)
+                if Possible == true then
+                    table.insert(AllIDs, ID)
+                    wait()
+                    pcall(function()
+                        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+                        wait()
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, game.Players.LocalPlayer)
+                    end)
+                    wait(4)
                 end
             end
-        else
-            warn("No servers found")
         end
-
-        return false
     end
-
+    
+    function Teleport()
+        while wait() do
+            pcall(function()
+                TPReturner()
+                if foundAnything ~= "" then
+                    TPReturner()
+                end
+            end)
+        end
+    end
     local veryImportantWaitTime = 0.5
     task.spawn(function()
         while task.wait(veryImportantWaitTime) do
             pcall(function()
-                for _, v in ipairs(game.CoreGui:GetDescendants()) do
+                for i,v in pairs(game.CoreGui:GetDescendants()) do
                     pcall(function()
-                        if v.Name == "ErrorMessage" and string.find(v.Text, "Security kick") then
-                            veryImportantWaitTime = 0.5 -- Change to 5 seconds
-                            game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
-                            Teleport()
+                        if string.find(v.Name,"ErrorMessage") then
+                            if string.find(v.Text,"Security kick") then
+                                veryImportantWaitTime = 1e9
+                                Teleport()
+                            end
                         end
                     end)
                 end
             end)
         end
     end)
-end
 
--- Start the process
-thisCode()
+
 
 local AllowRunService = true
 local AllowRunServiceBind = Instance.new("BindableFunction")
