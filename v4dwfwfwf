@@ -1,141 +1,149 @@
-function topos(Pos)
-        Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-        if game.Players.LocalPlayer.Character.Humanoid.Sit == true then game.Players.LocalPlayer.Character.Humanoid.Sit = false end
-        pcall(function() tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart,TweenInfo.new(Distance/210, Enum.EasingStyle.Linear),{CFrame = Pos}) end)
+--hehe
+function thisCode()
+    repeat task.wait() until game:IsLoaded()
+
+    local AllIDs = {}
+    local actualHour = os.date("!*t").hour
+    local File = pcall(function()
+        AllIDs = game:GetService('HttpService'):JSONDecode(readfile("NotSameServers.json"))
+    end)
+
+    if not File then
+        table.insert(AllIDs, actualHour)
+        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+    end
+
+    local function Teleport(pos)
+        while true do
+            local success = findServerWithItem("God's Chalice") or findServerWithItem("Fist of Darkness")
+
+            if success then
+                break
+            end
+            wait(0.5)
+        end
+    end
+
+    local function topos(Pos)
+        local Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+        if game.Players.LocalPlayer.Character.Humanoid.Sit then
+            game.Players.LocalPlayer.Character.Humanoid.Sit = false
+        end
+        local tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart, TweenInfo.new(Distance / 210, Enum.EasingStyle.Linear), { CFrame = Pos })
         tween:Play()
         if Distance <= 250 then
             tween:Cancel()
             game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = Pos
         end
-        if _G.StopTween == true then
+        if _G.StopTween then
             tween:Cancel()
             _G.Clip = false
         end
     end
-    
-function matiMampusLu(delay)
-require(game:GetService("ReplicatedStorage").Notification).new("Hello"):Display();
-wait(delay)
-game.Players.LocalPlayer.Character.Humanoid.Health = 0
-end
 
-function thisCode()
-    repeat task.wait() until game:IsLoaded()
-    local PlaceID = game.PlaceId
-    local AllIDs = {}
-    local foundAnything = ""
-    local actualHour = os.date("!*t").hour
-    local Deleted = false
-    local File = pcall(function()
-        AllIDs = game:GetService('HttpService'):JSONDecode(readfile("NotSameServers.json"))
-    end)
-    if not File then
-        table.insert(AllIDs, actualHour)
-        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+    local function matiMampusLu(delay)
+        require(game:GetService("ReplicatedStorage").Notification).new("Hello"):Display()
+        wait(delay)
+        game.Players.LocalPlayer.Character.Humanoid.Health = 0
     end
-    function TPReturner()
-        local Site;
-        if foundAnything == "" then
-            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-        else
-            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
-        end
-        local ID = ""
-        if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
-            foundAnything = Site.nextPageCursor
-        end
-        local num = 0;
-        for i,v in pairs(Site.data) do
-            local Possible = true
-            ID = tostring(v.id)
-            if tonumber(v.maxPlayers) > tonumber(v.playing) then
-                for _,Existing in pairs(AllIDs) do
-                    if num ~= 0 then
-                        if ID == tostring(Existing) then
-                            Possible = false
-                        end
-                    else
-                        if tonumber(actualHour) ~= tonumber(Existing) then
-                            local delFile = pcall(function()
-                                delfile("NotSameServers.json")
-                                AllIDs = {}
-                                table.insert(AllIDs, actualHour)
-                            end)
+
+    local function findServerWithItem(itemName)
+        local function getServerData()
+            local PlaceID = game.PlaceId
+            local servers = {}
+            local cursor = ""
+
+            while true do
+                local response = game:GetService("HttpService"):JSONDecode(game:HttpGetAsync(
+                    string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100&cursor=%s", PlaceID, cursor)
+                ))
+
+                if response and response.data then
+                    for _, server in ipairs(response.data) do
+                        if tonumber(server.maxPlayers) > tonumber(server.playing) then
+                            table.insert(servers, server)
                         end
                     end
-                    num = num + 1
                 end
-                if Possible == true then
-                    table.insert(AllIDs, ID)
-                    wait()
-                    pcall(function()
-                        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
-                        wait()
-                        game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, game.Players.LocalPlayer)
-                    end)
-                    wait(4)
+
+                if response and response.nextPageCursor and response.nextPageCursor ~= "null" then
+                    cursor = response.nextPageCursor
+                else
+                    break
                 end
             end
+
+            return servers
         end
-    end
-    
-    function Teleport()
-        while wait() do
-            pcall(function()
-                TPReturner()
-                if foundAnything ~= "" then
-                    TPReturner()
-                end
+
+        local servers = getServerData()
+
+        if #servers > 0 then
+            table.sort(servers, function(a, b)
+                return a.playing < b.playing
             end)
+
+            for _, server in ipairs(servers) do
+                local success, message = pcall(function()
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
+                end)
+
+                if success then
+                    wait(2)
+                    local foundItem = game.Players.LocalPlayer.Backpack:FindFirstChild(itemName) or game.Players.LocalPlayer.Character:FindFirstChild(itemName)
+
+                    if foundItem then
+                        return true
+                    end
+                else
+                    warn("Failed to teleport to server:", message)
+                end
+            end
+        else
+            warn("No servers found")
         end
+
+        return false
     end
+
     local veryImportantWaitTime = 0.5
     task.spawn(function()
-        while task.wait(veryImportantWaitTime) do
+        while true do
+            task.wait(veryImportantWaitTime)
             pcall(function()
-                for i,v in pairs(game.CoreGui:GetDescendants()) do
+                for _, v in ipairs(game.CoreGui:GetDescendants()) do
                     pcall(function()
-                        if string.find(v.Name,"ErrorMessage") then
-                            if string.find(v.Text,"Security kick") then
-                                veryImportantWaitTime = 1e9
-                                Teleport()
-                            end
+                        if v.Name == "ErrorMessage" and string.find(v.Text, "Security kick") then
+                            veryImportantWaitTime = 5 -- Change to 5 seconds
+                            game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+                            Teleport(1)
                         end
                     end)
                 end
             end)
         end
     end)
-    
-    local AllowRunService = true
-    local AllowRunServiceBind = Instance.new("BindableFunction")
-    function AllowRunServiceBind.OnInvoke(args)
-        if args == "ON" then
-            require(game:GetService("ReplicatedStorage").Notification).new("Auto Farm Chest : ON"):Display();
-            AllowRunService = true
-        elseif args == "OFF" then
-            require(game:GetService("ReplicatedStorage").Notification).new("Auto Farm Chest : OFF"):Display();
-            AllowRunService = false
-        end
-        local CoreGui = game:GetService("StarterGui")
-        CoreGui:SetCore("SendNotification", {
-            Title = "CHEST CONTROL V4 BETA",
-            Text = "Made By Reid#0361",
-            Icon = "rbxassetid://14001704166",
-            Duration = math.huge,
-            Callback = AllowRunServiceBind,
-            Button1 = "ON",
-            Button2 = "OFF",
-        })
-        
-    local CoreGui = game:GetService("StarterGui")
-    CoreGui:SetCore("SendNotification", {
-        Title = "ITEMS INFO",
-        Text = "IT Auto Stops When Found\nGod's Chalice Or Fist of Darkness",
-        Duration = math.huge,
-    })
-    end
+end
 
+-- Start the process
+thisCode()
+
+local AllowRunService = true
+local AllowRunServiceBind = Instance.new("BindableFunction")
+
+local function toggleService(args)
+    if args == "ON" then
+        require(game:GetService("ReplicatedStorage").Notification).new("Auto Farm Chest : ON"):Display()
+        AllowRunService = true
+    elseif args == "OFF" then
+        require(game:GetService("ReplicatedStorage").Notification).new("Auto Farm Chest : OFF"):Display()
+        AllowRunService = false
+    end
+end
+
+AllowRunServiceBind.OnInvoke = toggleService
+
+local function initializeNotification()
     local CoreGui = game:GetService("StarterGui")
     CoreGui:SetCore("SendNotification", {
         Title = "CHEST CONTROL V4 BETA",
@@ -146,133 +154,107 @@ function thisCode()
         Button1 = "ON",
         Button2 = "OFF",
     })
-    
-    local CoreGui = game:GetService("StarterGui")
+
     CoreGui:SetCore("SendNotification", {
         Title = "ITEMS INFO",
         Text = "IT Auto Stops When Found\nGod's Chalice Or Fist of Darkness",
         Duration = math.huge,
     })
-
-function checkBackpack()
-print("Always Check BackPack")
-if game.Players.LocalPlayer.Backpack:FindFirstChild("God's Chalice") or game.Players.LocalPlayer.Character:FindFirstChild("God's Chalice") then
-
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found God's Chalice",
-Duration = 2,
-})
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found God's Chalice",
-Duration = 2,
-})
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found God's Chalice",
-Duration = 2,
-})
-                        
-AllowRunService = false
-wait(0.5)
-topos(CFrame.new(-5074.45556640625, 314.5155334472656, -2991.054443359375))
-                            
-elseif game.Players.LocalPlayer.Backpack:FindFirstChild("Fist of Darkness") or game.Players.LocalPlayer.Character:FindFirstChild("Fist of Darkness") then
-
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found Fist of Darkness",
-Duration = 2,
-})
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found Fist of Darkness",
-Duration = 2,
-})
-local CoreGui = game:GetService("StarterGui")
-CoreGui:SetCore("SendNotification", {
-Title = "Congratulations",
-Text = "You have found Fist of Darkness",
-Duration = 2,
-})
-
-AllowRunService = false
-wait(0.5)
-topos(CFrame.new(-380.47927856445, 77.220390319824, 255.82550048828))
-                        
 end
+
+initializeNotification()
+
+local function checkBackpack()
+    print("Always Check Backpack")
+
+    if game.Players.LocalPlayer.Backpack:FindFirstChild("God's Chalice") or game.Players.LocalPlayer.Character:FindFirstChild("God's Chalice") then
+        for _ = 1, 3 do
+            local CoreGui = game:GetService("StarterGui")
+            CoreGui:SetCore("SendNotification", {
+                Title = "Congratulations",
+                Text = "You have found God's Chalice",
+                Duration = 2,
+            })
+        end
+
+        AllowRunService = false
+        wait(0.5)
+        topos(CFrame.new(-5074.45556640625, 314.5155334472656, -2991.054443359375))
+
+    elseif game.Players.LocalPlayer.Backpack:FindFirstChild("Fist of Darkness") or game.Players.LocalPlayer.Character:FindFirstChild("Fist of Darkness") then
+        for _ = 1, 3 do
+            local CoreGui = game:GetService("StarterGui")
+            CoreGui:SetCore("SendNotification", {
+                Title = "Congratulations",
+                Text = "You have found Fist of Darkness",
+                Duration = 2,
+            })
+        end
+
+        AllowRunService = false
+        wait(0.5)
+        topos(CFrame.new(-380.47927856445, 77.220390319824, 255.82550048828))
+    end
 end
-    
-    task.spawn(function()
-        while true do
-            if AllowRunService == true then
-                local hasChar = game.Players.LocalPlayer:FindFirstChild("Character")
-                if not game.Players.LocalPlayer.Character then
-        
+
+task.spawn(function()
+    while true do
+        if AllowRunService then
+            local hasChar = game.Players.LocalPlayer:FindFirstChild("Character")
+            if hasChar then
+                local hasCrewTag = game.Players.LocalPlayer.Character:FindFirstChild("CrewBBG", true)
+if hasCrewTag then
+hasCrewTag:Destroy()
+end
+local hasHumanoid = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+if hasHumanoid then
+local Chest = game.Workspace:FindFirstChild("Chest4") or game.Workspace:FindFirstChild("Chest3") or game.Workspace:FindFirstChild("Chest2") or game.Workspace:FindFirstChild("Chest1") or game.Workspace:FindFirstChild("Chest")
+                if Chest then
+                    checkBackpack()
+                    game.Players.LocalPlayer.Character:PivotTo(Chest:GetPivot())
+                    Chest.Touched:Fire(game.Players.LocalPlayer.Character.HumanoidRootPart)
                 else
-                    local hasCrewTag = game.Players.LocalPlayer.Character:FindFirstChild("CrewBBG",true)
-                    if hasCrewTag then hasCrewTag:Destroy() end
-                    local hasHumanoid = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-                    if hasHumanoid then
-                        local Chest = game.Workspace:FindFirstChild("Chest4") or game.Workspace:FindFirstChild("Chest3") or game.Workspace:FindFirstChild("Chest2") or game.Workspace:FindFirstChild("Chest1") or game.Workspace:FindFirstChild("Chest")
-
-                        if Chest then
-                        
-                            checkBackpack()
-                            game.Players.LocalPlayer.Character:PivotTo(Chest:GetPivot())
-                            firesignal(Chest.Touched,game.Players.LocalPlayer.Character.HumanoidRootPart)
-                            
-                        
-                        else
-                            Teleport()
-                            break
-                        end
-                    end 
+                    wait(2)
+                    Teleport()
+                    break
                 end
             end
-            task.wait()
         end
-    end)
-   
+    end
+    task.wait()
 end
+end)
 
-thisCode()
-
-join = game.Players.localPlayer.Neutral == false
+local join = false
 if _G.Team == nil then
-    _G.Team = "Marines"
+_G.Team = "Marines"
 end
 _G.Team = "Marines"
 if (_G.Team == "Pirates" or _G.Team == "Marines") and not join then
-    repeat wait()
-        pcall(function()
-            join = game.Players.localPlayer.Neutral == false
-            if _G.Team == "Pirates" then
-                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton[v])) do
-                        v.Function()
-                    end
-                end
-            elseif _G.Team == "Marines" then
-                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
-                        v.Function()
-                    end
-                end
-            else
-                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
-                        v.Function()
-                    end
-                end
-            end
-        end)
-    until join == true
-    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Visible = false
+repeat
+wait()
+pcall(function()
+join = game.Players.LocalPlayer.Neutral == false
+if _G.Team == "Pirates" then
+for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+for _, conn in pairs(getconnections(game.Players.LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton[v])) do
+conn.Function()
+end
+end
+elseif _G.Team == "P" then
+for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+for _, conn in pairs(getconnections(game.Players.LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
+conn.Function()
+end
+end
+else
+for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+for _, conn in pairs(getconnections(game.Players.LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
+conn.Function()
+end
+end
+end
+end)
+until join == true
+game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Visible = false
 end
