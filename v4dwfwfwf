@@ -1,4 +1,5 @@
 -- Define the main function that handles the auto-farm process
+-- Define the main function that handles the auto-farm process
 function thisCode()
     repeat task.wait() until game:IsLoaded()
 
@@ -204,6 +205,37 @@ function thisCode()
             end)
         end
     end)
+
+    task.spawn(function()
+        while true do
+            if _G.AllowRunService == true then
+                local hasChar = game.Players.LocalPlayer:FindFirstChild("Character")
+                if not game.Players.LocalPlayer.Character then
+
+                else
+                    local hasCrewTag = game.Players.LocalPlayer.Character:FindFirstChild("CrewBBG", true)
+                    if hasCrewTag then
+                        hasCrewTag:Destroy()
+                    end
+                    local hasHumanoid = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+                    if hasHumanoid then
+                        local Chest = game.Workspace:FindFirstChild("Chest4") or game.Workspace:FindFirstChild("Chest3") or game.Workspace:FindFirstChild("Chest2") or game.Workspace:FindFirstChild("Chest1") or game.Workspace:FindFirstChild("Chest")
+
+                        if Chest then
+                            checkBackpack()
+                            game.Players.LocalPlayer.Character:PivotTo(Chest:GetPivot())
+                            firesignal(Chest.Touched, game.Players.LocalPlayer.Character.HumanoidRootPart)
+                        else
+                            wait(5.6)
+                            Teleport()
+                            break
+                        end
+                    end
+                end
+            end
+            task.wait()
+        end
+    end)
 end
 
 -- Start the process
@@ -239,7 +271,7 @@ CoreGui:SetCore("SendNotification", {
     Text = "IT Auto Stops When Found\nGod's Chalice Or Fist of Darkness",
     Duration = math.huge,
 })
-end
+
 
 local CoreGui = game:GetService("StarterGui")
 CoreGui:SetCore("SendNotification", {
