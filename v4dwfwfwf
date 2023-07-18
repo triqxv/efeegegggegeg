@@ -1,3 +1,4 @@
+-- Define the main function that handles the auto-farm process
 function thisCode()
     repeat task.wait() until game:IsLoaded()
 
@@ -12,14 +13,65 @@ function thisCode()
         writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
     end
 
-    function Teleport()
-        while wait() do
-            local success = findServerWithItem("God's Chalice") or findServerWithItem("Fist of Darkness")
+    function findServerWithItem(itemName)
+        local function getServerData(cursor)
+            local PlaceID = game.PlaceId
+            local servers = {}
 
-            if success then
-                break
+            while true do
+                local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100", PlaceID)
+                if cursor then
+                    url = url .. "&cursor=" .. cursor
+                end
+
+                local response = game.HttpService:JSONDecode(game:HttpGetAsync(url))
+
+                if response and response.data then
+                    for _, server in ipairs(response.data) do
+                        if tonumber(server.maxPlayers) > tonumber(server.playing) then
+                            table.insert(servers, server)
+                        end
+                    end
+                end
+
+                if response and response.nextPageCursor and response.nextPageCursor ~= "null" then
+                    cursor = response.nextPageCursor
+                else
+                    break
+                end
             end
+
+            return servers
         end
+
+        local servers = getServerData()
+
+        if #servers > 0 then
+            table.sort(servers, function(a, b)
+                return a.playing < b.playing
+            end)
+
+            for _, server in ipairs(servers) do
+                local success, message = pcall(function()
+                    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
+                end)
+
+                if success then
+                    wait(0.5) -- Delay of 2 seconds before attempting to find the item
+                    local foundItem = game.Players.LocalPlayer.Backpack:FindFirstChild(itemName) or game.Players.LocalPlayer.Character:FindFirstChild(itemName)
+
+                    if foundItem then
+                        return true
+                    end
+                else
+                    warn("Failed to teleport to server:", message)
+                end
+            end
+        else
+            warn("No servers found")
+        end
+
+        return false
     end
 
     function topos(Pos)
@@ -45,66 +97,97 @@ function thisCode()
         game.Players.LocalPlayer.Character.Humanoid.Health = 0
     end
 
-   function findServerWithItem(itemName)
-    local function getServerData()
-        local PlaceID = game.PlaceId
-        local servers = {}
-        local cursor = ""
+    function checkBackpack()
+        print("Always Check Backpack")
 
-        while true do
-            local response = game.HttpService:JSONDecode(game:HttpGetAsync(
-                string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100&cursor=%s", PlaceID, cursor)
-            ))
+        if game.Players.LocalPlayer.Backpack:FindFirstChild("God's Chalice") or game.Players.LocalPlayer.Character:FindFirstChild("God's Chalice") then
+            for _ = 1, 3 do
+                local CoreGui = game:GetService("StarterGui")
+                CoreGui:SetCore("SendNotification", {
+                    Title = "Congratulations",
+                    Text = "You have found God's Chalice",
+                    Duration = 2,
+                })
+            end
 
-            if response and response.data then
-                for _, server in ipairs(response.data) do
-                    if tonumber(server.maxPlayers) > tonumber(server.playing) then
-                        table.insert(servers, server)
+            _G.AllowRunService = false
+            wait(0.5)
+            topos(CFrame.new(-5074.45556640625, 314.5155334472656, -2991.054443359375))
+
+        elseif game.Players.LocalPlayer.Backpack:FindFirstChild("Fist of Darkness") or game.Players.LocalPlayer.Character:FindFirstChild("Fist of Darkness") then
+            for _ = 1, 3 do
+                local CoreGui = game:GetService("StarterGui")
+                CoreGui:SetCore("SendNotification", {
+                    Title = "Congratulations",
+                    Text = "You have found Fist of Darkness",
+                    Duration = 2,
+                })
+            end
+
+            _G.AllowRunService = false
+            wait(0.5)
+            topos(CFrame.new(-380.47927856445, 77.220390319824, 255.82550048828))
+        end
+    end
+
+    function TPReturner()
+        local Site;
+        if foundAnything == "" then
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. game.PlaceId .. '/servers/Public?sortOrder=Asc&limit=100'))
+        else
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. game.PlaceId .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+        end
+        local ID = ""
+        if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+            foundAnything = Site.nextPageCursor
+        end
+        local num = 0;
+        for i,v in pairs(Site.data) do
+            local Possible = true
+            ID = tostring(v.id)
+            if tonumber(v.maxPlayers) > tonumber(v.playing) then
+                for _,Existing in pairs(AllIDs) do
+                    if num ~= 0 then
+                        if ID == tostring(Existing) then
+                            Possible = false
+                        end
+                    else
+                        if tonumber(actualHour) ~= tonumber(Existing) then
+                            local delFile = pcall(function()
+                                delfile("NotSameServers.json")
+                                AllIDs = {}
+                                table.insert(AllIDs, actualHour)
+                            end)
+                        end
                     end
+                    num = num + 1
+                end
+                if Possible == true then
+                    table.insert(AllIDs, ID)
+                    wait()
+                    pcall(function()
+                        writefile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
+                        wait()
+                        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, ID, game.Players.LocalPlayer)
+                    end)
+                    wait(4)
                 end
             end
-
-            if response and response.nextPageCursor and response.nextPageCursor ~= "null" then
-                cursor = response.nextPageCursor
-            else
-                break
-            end
         end
-
-        return servers
     end
 
-    local servers = getServerData()
-
-    if #servers > 0 then
-        table.sort(servers, function(a, b)
-            return a.playing < b.playing
-        end)
-
-        for _, server in ipairs(servers) do
-            local success, message = pcall(function()
-                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id)
+    function Teleport()
+        while wait() do
+            pcall(function()
+                TPReturner()
+                if foundAnything ~= "" then
+                    TPReturner()
+                end
             end)
-
-            if success then
-                wait(0.5) -- Delay of 2 seconds before attempting to find the item
-                local foundItem = game.Players.LocalPlayer.Backpack:FindFirstChild(itemName) or game.Players.LocalPlayer.Character:FindFirstChild(itemName)
-
-                if foundItem then
-                    return true
-                end
-            else
-                warn("Failed to teleport to server:", message)
-            end
         end
-    else
-        warn("No servers found")
     end
 
-    return false
-end
-
-
+    _G.AllowRunService = true
     local veryImportantWaitTime = 0.5
     task.spawn(function()
         while task.wait(veryImportantWaitTime) do
@@ -137,24 +220,25 @@ function AllowRunServiceBind.OnInvoke(args)
         require(game:GetService("ReplicatedStorage").Notification).new("Auto Farm Chest : OFF"):Display()
         AllowRunService = false
     end
+end
 
-    local CoreGui = game:GetService("StarterGui")
-    CoreGui:SetCore("SendNotification", {
-        Title = "CHEST CONTROL V4 BETA",
-        Text = "Made By Reid#0361",
-        Icon = "rbxassetid://14001704166",
-        Duration = math.huge,
-        Callback = AllowRunServiceBind,
-        Button1 = "ON",
-        Button2 = "OFF",
-    })
+local CoreGui = game:GetService("StarterGui")
+CoreGui:SetCore("SendNotification", {
+    Title = "CHEST CONTROL V4 BETA",
+    Text = "Made By Reid#0361",
+    Icon = "rbxassetid://14001704166",
+    Duration = math.huge,
+    Callback = AllowRunServiceBind,
+    Button1 = "ON",
+    Button2 = "OFF",
+})
 
-    local CoreGui = game:GetService("StarterGui")
-    CoreGui:SetCore("SendNotification", {
-        Title = "ITEMS INFO",
-        Text = "IT Auto Stops When Found\nGod's Chalice Or Fist of Darkness",
-        Duration = math.huge,
-    })
+local CoreGui = game:GetService("StarterGui")
+CoreGui:SetCore("SendNotification", {
+    Title = "ITEMS INFO",
+    Text = "IT Auto Stops When Found\nGod's Chalice Or Fist of Darkness",
+    Duration = math.huge,
+})
 end
 
 local CoreGui = game:GetService("StarterGui")
