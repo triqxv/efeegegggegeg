@@ -1,5 +1,6 @@
 -- Define the main function that handles the auto-farm process
 -- Define the main function that handles the auto-farm process
+--yessir
 function thisCode()
     repeat task.wait() until game:IsLoaded()
 
