@@ -214,7 +214,7 @@ task.spawn(function()
                         game.Players.LocalPlayer.Character:PivotTo(Chest:GetPivot())
                         firesignal(Chest.Touched, game.Players.LocalPlayer.Character.HumanoidRootPart)
                     else
-                        wait(5.6)
+                        wait(1)
                         Teleport()
                         break
                     end
@@ -224,32 +224,31 @@ task.spawn(function()
         task.wait()
     end
 end)
-local join = game.Players.LocalPlayer.Neutral == false
+join = game.Players.localPlayer.Neutral == false
 if _G.Team == nil then
     _G.Team = "Marines"
 end
 _G.Team = "Marines"
 if (_G.Team == "Pirates" or _G.Team == "Marines") and not join then
-    repeat
-        wait()
+    repeat wait()
         pcall(function()
-            join = game.Players.LocalPlayer.Neutral == false
+            join = game.Players.localPlayer.Neutral == false
             if _G.Team == "Pirates" then
-                for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for _, conn in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton[v])) do
-                        conn.Function()
+                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton[v])) do
+                        v.Function()
                     end
                 end
-            elseif _G.Team == "P" then
-                for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for _, conn in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
-                        conn.Function()
+            elseif _G.Team == "Marines" then
+                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
+                        v.Function()
                     end
                 end
             else
-                for i, v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                    for _, conn in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
-                        conn.Function()
+                for i,v in pairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+                    for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton[v])) do
+                        v.Function()
                     end
                 end
             end
