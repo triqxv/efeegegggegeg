@@ -1,3 +1,4 @@
+--hello
 function thisCode()
     repeat task.wait() until game:IsLoaded()
 
